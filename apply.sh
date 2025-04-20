@@ -17,3 +17,22 @@ terraform init                      # Initialize Terraform plugins/backend
 terraform apply -auto-approve       # Apply infrastructure configuration without prompt
 cd ..                               # Return to root directory
 
+
+# Extract the project_id using jq
+project_id=$(jq -r '.project_id' "./credentials.json")
+
+gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
+export GOOGLE_APPLICATION_CREDENTIALS="../credentials.json"
+
+
+cd 02-packer
+cd linux
+packer init .
+
+packer build \
+  -var="project_id=$project_id"  \
+  -var="password=furby" \
+  linux_image.pkr.hcl
+
+cd ..
+cd ..
