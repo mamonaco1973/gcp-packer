@@ -44,8 +44,8 @@ source "googlecompute" "packer_build_image" {
   ssh_username          = "ubuntu"                # Specify the SSH username
   machine_type          = "e2-micro"              # Smallest machine type for cost-effectiveness
 
-  image_name            = "games_image_${local.timestamp}" # Use local.timestamp directly
-  image_family          = "games_images"          # Image family to group related images
+  image_name            = "games-image_${local.timestamp}" # Use local.timestamp directly
+  image_family          = "games-images"          # Image family to group related images
   disk_size             = 20                      # Disk size in GB
 }
 
