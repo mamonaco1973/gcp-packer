@@ -17,8 +17,10 @@ resource "google_compute_instance" "games_vm" {
     access_config {}                        # Automatically assigns a public IP for external access.
   }
 
-  # Metadata for Startup Script
-  metadata_startup_script = file("./scripts/startup_script.sh")  # Runs a startup script upon instance boot.
+  # Metadata for Startup Script with variable injection
+  metadata_startup_script = templatefile("./scripts/startup_script.sh", {
+    image = data.google_compute_image.games_packer_image.name
+  })  # Renders the script with provided variables before instance boot.
 
   # Tags for Firewall Rules
   tags = ["allow-ssh", "allow-http"]        # Tags to match firewall rules for SSH and HTTP access.
