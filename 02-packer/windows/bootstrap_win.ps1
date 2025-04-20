@@ -1,4 +1,3 @@
-<powershell>
 try {
     Write-Host "Starting WinRM HTTP setup..." -ForegroundColor Cyan
 
@@ -36,4 +35,3 @@ catch {
     Write-Error "WinRM HTTP setup failed: $_"
     exit 1
 }
-</powershell>
