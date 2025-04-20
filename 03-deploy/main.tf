@@ -21,3 +21,4 @@ data "google_compute_subnetwork" "packer_subnet" {
   name    = "packer-subnet"
   region  = "us-central1"  
 }
+
