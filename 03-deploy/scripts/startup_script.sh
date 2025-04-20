@@ -7,5 +7,5 @@ sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_
 systemctl restart ssh
 # Restart SSH daemon to apply the new authentication setting
 
-echo "The AMI name is ${ami_name}."
+echo "The image name is ${image}."
 
