@@ -1,5 +1,11 @@
 #!/bin/bash
+# Script runs on first boot — modify SSH server configuration to allow password-based login
 
-echo "NOTE: Inside startup_script."
-echo "NOTE: The image name is ${image}"
+sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+# Replace 'no' with 'yes' to enable password login for SSH
+
+systemctl restart ssh
+# Restart SSH daemon to apply the new authentication setting
+
+echo "The AMI name is ${ami_name}."
 
