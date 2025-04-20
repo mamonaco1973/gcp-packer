@@ -59,6 +59,9 @@ source "googlecompute" "windows_image" {
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   communicator          = "winrm"
+  winrm_insecure = true             # Allow self-signed cert
+  winrm_use_ntlm = true             # NTLM auth required in many builds
+  winrm_use_ssl  = true             # Always use SSL for encryption
   winrm_username        = "builder"
   winrm_password        = var.password
 
