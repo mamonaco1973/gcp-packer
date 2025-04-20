@@ -62,3 +62,19 @@ resource "google_compute_firewall" "allow_ssh" {
   source_ranges = ["0.0.0.0/0"]                       # Allow SSH access from anywhere (can restrict later for security)
   target_tags   = ["allow-ssh"]                       # Only applies to instances tagged with "allow-ssh"
 }
+
+############################################
+# FIREWALL RULE: ALLOW INBOUND WINRM TRAFFIC
+############################################
+resource "google_compute_firewall" "allow_winrm" {
+  name    = "allow-winrm"                             # Name for the SSH firewall rule
+  network = google_compute_network.packer_vpc.id      # Applies rule to the defined custom VPC
+
+  allow {
+    protocol = "tcp"                                  # Allow TCP traffic
+    ports    = ["5985"]                               # Port 5985 for WinRM traffic
+  }
+
+  source_ranges = ["0.0.0.0/0"]                       # Allow SSH access from anywhere (can restrict later for security)
+  target_tags   = ["allow-winrm"]                     # Only applies to instances tagged with "allow-ssh"
+}

@@ -61,12 +61,15 @@ source "googlecompute" "windows_image" {
   communicator          = "winrm"
   winrm_username        = "builder"
   winrm_password        = var.password
+  network               = "packer-vpc"
 
   metadata = {
     windows-startup-script-ps1 = templatefile("./bootstrap_win.ps1", {
       password = var.password
     })
   }
+
+  tags = ["allow-winrm"]
 }
 
 ############################################
