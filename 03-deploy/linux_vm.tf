@@ -2,7 +2,8 @@ resource "google_compute_instance" "games_vm" {
   name         = "games-vm"                 # Name of the instance.
   machine_type = "e2-micro"                 # Machine type for cost-efficient workloads.
   zone         = "us-central1-a"            # Deployment zone for the instance.
-
+  allow_stopping_for_update = true
+  
   # Boot Disk Configuration
   boot_disk {
     initialize_params {
