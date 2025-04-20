@@ -22,7 +22,8 @@ try {
     New-Item -Path WSMan:\LocalHost\Listener -Transport HTTP -Address * -Port 5985 -Force
 
     # Open firewall port for HTTP
-    New-NetFirewallRule -DisplayName "Allow WinRM HTTP" -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow
+    #New-NetFirewallRule -DisplayName "Allow WinRM HTTP" -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow
+    New-NetFirewallRule -DisplayName "Allow WinRM HTTP" -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow -Profile Any
 
     # Start WinRM
     Stop-Service winrm
