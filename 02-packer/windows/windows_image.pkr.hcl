@@ -61,6 +61,7 @@ source "googlecompute" "windows_image" {
   communicator          = "winrm"
   winrm_username        = "Administrator"  
   winrm_password        = var.password
+  winrm_insecure        = true
   network               = "packer-vpc"
   subnetwork            = "packer-subnet"
 
