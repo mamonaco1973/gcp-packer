@@ -22,7 +22,7 @@ cd ..                               # Return to root directory
 project_id=$(jq -r '.project_id' "./credentials.json")
 
 gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
-export GOOGLE_APPLICATION_CREDENTIALS="../credentials.json"
+export GOOGLE_APPLICATION_CREDENTIALS="./credentials.json"
 
 
 cd 02-packer
