@@ -12,8 +12,8 @@ resource "google_compute_instance" "games_vm" {
 
   # Network Interface Configuration
   network_interface {
-    network    = google_compute_network.packer_vpc.id           
-    subnetwork = google_compute_subnetwork.packer_subnet.id     
+    network    = data.google_compute_network.packer_vpc.id           
+    subnetwork = data.google_compute_subnetwork.packer_subnet.id     
     access_config {}                        # Automatically assigns a public IP for external access.
   }
 
