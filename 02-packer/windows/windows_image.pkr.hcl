@@ -59,11 +59,11 @@ source "googlecompute" "windows_image" {
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   communicator          = "winrm"
-  winrm_username        = "builder"
+  winrm_username        = "Administrator"  
   winrm_password        = var.password
   network               = "packer-vpc"
   subnetwork            = "packer-subnet"
-  
+
   metadata = {
     windows-startup-script-ps1 = templatefile("./bootstrap_win.ps1", {
       password = var.password
