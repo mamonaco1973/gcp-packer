@@ -24,6 +24,7 @@ project_id=$(jq -r '.project_id' "./credentials.json")
 gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 
+password=$(gcloud secrets versions access latest --secret="packer-credentials" | jq -r '.password')
 
 cd 02-packer
 cd linux
@@ -31,8 +32,40 @@ packer init .
 
 packer build \
   -var="project_id=$project_id"  \
-  -var="password=furby" \
+  -var="password=$password" \
   linux_image.pkr.hcl
 
 cd ..
+
+cd windows
+packer init .
+
+packer build \
+  -var="project_id=$project_id"  \
+  -var="password=$password" \
+  windows_image.pkr.hcl
+
 cd ..
+
+cd ..
+
+games_image=$(gcloud compute images list \
+  --filter="name~'^games-image' AND family=games-images" \
+  --sort-by="~creationTimestamp" \
+  --limit=1 \
+  --format="value(name)")
+
+if [[ -z "$games_image" ]]; then
+  echo "ERROR: No latest image found for 'games-image' in family 'games-images'."
+  exit 1
+fi
+
+echo "NOTE: Games image is $games_image"
+
+cd 03-deploy
+terraform init
+terraform apply -var="games_image_name=$games_image" -auto-approve
+cd ..
+
+
+
