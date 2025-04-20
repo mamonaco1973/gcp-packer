@@ -6,6 +6,14 @@ packer {
     }
   }
 }
+############################################
+# LOCALS: TIMESTAMP UTILITY
+############################################
+
+locals {
+  timestamp = regex_replace(timestamp(), "[- TZ:]", "") # Generate compact timestamp (YYYYMMDDHHMMSS)
+                                                       # Used for unique image names
+}
 
 variable "project_id" {
   description = "GCP Project ID"
