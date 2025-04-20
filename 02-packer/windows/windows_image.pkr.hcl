@@ -55,7 +55,7 @@ source "googlecompute" "windows_image" {
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   communicate_via_winrm = true
-  winrm_username        = "Administrator"
+  winrm_username        = "builder"
   winrm_password        = var.password
 
   metadata = {
