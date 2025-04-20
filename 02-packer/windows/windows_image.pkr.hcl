@@ -67,13 +67,7 @@ source "googlecompute" "windows_image" {
   
   network               = "packer-vpc"
   subnetwork            = "packer-subnet"
-
-  metadata = {
-    windows-startup-script-ps1 = templatefile("./bootstrap_win.ps1", {
-      password = var.password
-    })
-  }
-
+  
   tags = ["allow-winrm"]
 }
 
