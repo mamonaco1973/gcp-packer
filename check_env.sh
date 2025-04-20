@@ -35,4 +35,3 @@ if [[ ! -f "./credentials.json" ]]; then
 fi
 
 gcloud auth activate-service-account --key-file="./credentials.json"
-

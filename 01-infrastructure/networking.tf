@@ -1,108 +1,64 @@
-# Custom VPC
-# Creates a custom Virtual Private Cloud (VPC) network without automatically created subnetworks.
-resource "google_compute_network" "flask_vpc" {
-  name                    = "flask-vpc"               # Unique name for the VPC.
-  auto_create_subnetworks = false                     # Prevent automatic creation of subnetworks.
+############################################
+# CUSTOM VPC: DEFINES ISOLATED NETWORK
+############################################
+resource "google_compute_network" "packer_vpc" {
+  name                    = "packer-vpc"               # Name for the custom VPC
+  auto_create_subnetworks = false                      # Disables auto-created subnets so we can define explicit subnet structure
 }
 
-# Custom Subnet
-# Defines a subnet in the custom VPC with a specific IP CIDR range.
-resource "google_compute_subnetwork" "flask_subnet" {
-  name          = "flask-subnet"                     # Unique name for the subnet.
-  ip_cidr_range = "10.0.0.0/24"                      # CIDR range for the subnet.
-  region        = "us-central1"                      # Region where the subnet is created.
-  network       = google_compute_network.flask_vpc.id # Reference to the custom VPC.
+############################################
+# CUSTOM SUBNET: DEFINES INTERNAL IP RANGE
+############################################
+resource "google_compute_subnetwork" "packer_subnet" {
+  name          = "packer-subnet"                      # Name for the custom subnet
+  ip_cidr_range = "10.0.0.0/24"                        # Internal IP range (256 IPs total)
+  region        = "us-central1"                        # Region where the subnet will be created
+  network       = google_compute_network.packer_vpc.id # Connects this subnet to the custom VPC
 }
 
-# Firewall Rule: Allow HTTP Traffic
-# Allows inbound HTTP traffic (port 80) from any IP address.
+############################################
+# FIREWALL RULE: ALLOW INBOUND HTTP TRAFFIC
+############################################
 resource "google_compute_firewall" "allow_http" {
-  name    = "allow-http"                             # Unique name for the firewall rule.
-  network = google_compute_network.flask_vpc.id     # Reference to the custom VPC.
+  name    = "allow-http"                               # Name for the HTTP firewall rule
+  network = google_compute_network.packer_vpc.id       # Applies rule to the defined custom VPC
 
   allow {
-    protocol = "tcp"                                 # Protocol allowed (TCP).
-    ports    = ["80"]                                # HTTP port.
+    protocol = "tcp"                                   # Allow TCP traffic
+    ports    = ["80"]                                  # Specifically allow port 80 (HTTP)
   }
 
-  source_ranges = ["0.0.0.0/0"]                      # Allows traffic from any IP address.
+  source_ranges = ["0.0.0.0/0"]                        # Allow traffic from anywhere (public internet)
 }
 
-# Firewall Rule: Allow Flask Traffic
-# Allows inbound traffic to Flask application (port 8000) only for instances with the "allow-flask" tag.
-resource "google_compute_firewall" "allow_flask" {
-  name    = "allow-flask"                            # Unique name for the firewall rule.
-  network = google_compute_network.flask_vpc.id      # Reference to the custom VPC.
+############################################
+# FIREWALL RULE: ALLOW INBOUND RDP TRAFFIC
+############################################
+resource "google_compute_firewall" "allow_rdp" {
+  name    = "allow-rdp"                               # Name for the RDP firewall rule
+  network = google_compute_network.packer_vpc.id      # Applies rule to the defined custom VPC
 
   allow {
-    protocol = "tcp"                                 # Protocol allowed (TCP).
-    ports    = ["8000"]                              # Flask application port.
+    protocol = "tcp"                                  # Allow TCP traffic
+    ports    = ["3389"]                               # Port 3389 is used for Windows Remote Desktop (RDP)
   }
 
-  source_ranges = ["0.0.0.0/0"]                      # Allows traffic from any IP address.
-  target_tags   = ["allow-flask"]                    # Restricts to instances with this tag.
+  source_ranges = ["0.0.0.0/0"]                       # Allow access from any IP address
+  target_tags   = ["allow-rdp"]                       # Only applies to instances with the "allow-rdp" network tag
 }
 
-# Firewall Rule: Allow SSH Traffic
-# Allows inbound SSH traffic (port 22) only for instances with the "allow-ssh" tag.
+############################################
+# FIREWALL RULE: ALLOW INBOUND SSH TRAFFIC
+############################################
 resource "google_compute_firewall" "allow_ssh" {
-  name    = "allow-ssh"                              # Unique name for the firewall rule.
-  network = google_compute_network.flask_vpc.id      # Reference to the custom VPC.
+  name    = "allow-ssh"                               # Name for the SSH firewall rule
+  network = google_compute_network.packer_vpc.id      # Applies rule to the defined custom VPC
 
   allow {
-    protocol = "tcp"                                 # Protocol allowed (TCP).
-    ports    = ["22"]                                # SSH port.
+    protocol = "tcp"                                  # Allow TCP traffic
+    ports    = ["22"]                                 # Port 22 is used for Secure Shell (SSH) access
   }
 
-  source_ranges = ["0.0.0.0/0"]                      # Allows traffic from any IP address.
-  target_tags   = ["allow-ssh"]                      # Restricts to instances with this tag.
-}
-
-# Firewall Rule: Allow Firestore Traffic
-# Allows outbound traffic to Firestore services over HTTP and HTTPS.
-resource "google_compute_firewall" "allow_firestore" {
-  name       = "allow-firestore"                     # Unique name for the firewall rule.
-  network    = google_compute_network.flask_vpc.id   # Reference to the custom VPC.
-  direction  = "EGRESS"                              # Specifies outbound traffic.
-
-  allow {
-    protocol = "tcp"                                 # Protocol allowed (TCP).
-    ports    = ["80", "443"]                         # HTTP and HTTPS ports.
-  }
-
-  destination_ranges = ["0.0.0.0/0"]                 # Allows traffic to any IP address.
-}
-
-# Cloud Router
-# Creates a Cloud Router for managing network address translation (NAT) in the VPC.
-resource "google_compute_router" "flask_router" {
-  name    = "flask-router"                           # Unique name for the router.
-  network = google_compute_network.flask_vpc.id      # Reference to the custom VPC.
-  region  = "us-central1"                            # Region where the router is created.
-}
-
-# NAT Configuration
-# Configures Network Address Translation (NAT) for instances in the VPC to access the internet.
-resource "google_compute_router_nat" "flask_nat" {
-  name                                = "flask-nat"                             # Unique name for the NAT configuration.
-  router                              = google_compute_router.flask_router.name # Reference to the Cloud Router.
-  region                              = "us-central1"                           # Region where the NAT is configured.
-  nat_ip_allocate_option              = "AUTO_ONLY"                             # Automatically allocate IPs for NAT.
-  source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"         # Apply NAT to all subnets and IP ranges.
-}
-
-# Health Check
-# Monitors the health of instances in the instance group
-resource "google_compute_health_check" "http_health_check" {
-  name                = "http-health-check"                             # Name of the health check
-  check_interval_sec  = 5                                               # Frequency (in seconds) of health checks
-  timeout_sec         = 5                                               # Timeout (in seconds) for each health check
-  healthy_threshold   = 2                                               # Number of successful checks to mark the instance as healthy
-  unhealthy_threshold = 2                                               # Number of failed checks to mark the instance as unhealthy
-
-  # HTTP-specific health check configuration
-  http_health_check {
-    request_path = "/gtg"                                               # Path to send health check requests
-    port         = 8000                                                 # Port for the HTTP service
-  }
+  source_ranges = ["0.0.0.0/0"]                       # Allow SSH access from anywhere (can restrict later for security)
+  target_tags   = ["allow-ssh"]                       # Only applies to instances tagged with "allow-ssh"
 }
