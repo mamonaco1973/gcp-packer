@@ -72,7 +72,7 @@ resource "google_compute_firewall" "allow_winrm" {
 
   allow {
     protocol = "tcp"                                  # Allow TCP traffic
-    ports    = ["5985"]                               # Port 5985 for WinRM traffic
+    ports    = ["5986"]                               # Port 5986 for WinRM traffic
   }
 
   source_ranges = ["0.0.0.0/0"]                       # Allow SSH access from anywhere (can restrict later for security)
