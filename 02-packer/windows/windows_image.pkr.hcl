@@ -15,6 +15,11 @@ packer {
   }
 }
 
+locals {
+  timestamp = regex_replace(timestamp(), "[- TZ:]", "") # Generate compact timestamp (YYYYMMDDHHMMSS)
+                                                       # Used for unique image names
+}
+
 ############################################
 #           PARAMETER VARIABLES
 ############################################
