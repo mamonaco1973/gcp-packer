@@ -26,12 +26,7 @@ resource "google_compute_instance" "desktop_vm" {
 
   # Tags for Firewall Rules
   tags = ["allow-rdp"]                      # Tags to match firewall rules for SSH and HTTP access.
-
-#   # Service Account Configuration
-#   service_account {
-#     email  = "default"                      # Uses the default service account for the project.
-#     scopes = ["cloud-platform"]             # Grants access to all Google Cloud APIs.
-#   }
+  
 }
 
 # Output: Public IP of the Ubuntu VM
