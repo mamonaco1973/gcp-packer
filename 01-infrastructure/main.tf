@@ -1,13 +1,26 @@
-# Google Cloud Provider Configuration
-# Configures the Google Cloud provider using project details and credentials from a JSON file.
+############################################
+# GOOGLE CLOUD PROVIDER CONFIGURATION
+############################################
+
+# Configures the Google Cloud provider block for all Terraform resources
+# This defines *how* Terraform talks to GCP, and with *what identity*
 provider "google" {
-  project     = local.credentials.project_id             # Specifies the project ID from the decoded credentials file.
-  credentials = file("../credentials.json")              # Path to the credentials JSON file for authentication.
+  project     = local.credentials.project_id   # Dynamically pulls the project ID from decoded credentials (prevents hardcoding)
+  credentials = file("../credentials.json")    # Loads the full path to a local GCP service account credentials file
+                                               # ⚠️ Must be a properly formatted JSON file from IAM, or authentication will fail
+                                               # ⚠️ Ensure this file is secured and **never** committed to source control
 }
 
-# Local Variables
-# Reads and decodes the credentials.json file to extract necessary details like project ID and service account email.
+############################################
+# LOCAL VARIABLES: CREDENTIALS EXTRACTION
+############################################
+
+# Parses the service account JSON file to extract reusable properties
+# This avoids manually defining things like project_id or service_account_email
 locals {
-  credentials            = jsondecode(file("../credentials.json")) # Decodes the JSON file into a usable map structure.
-  service_account_email  = local.credentials.client_email          # Extracts the service account email from the decoded JSON.
+  credentials = jsondecode(file("../credentials.json"))  # Decodes the raw JSON file into a usable map object
+                                                         # Contains fields like project_id, client_email, private_key, etc.
+
+  service_account_email = local.credentials.client_email # Pulls out the `client_email` field (used for IAM roles, bindings, logging)
+                                                         # ⚠️ Will break if JSON structure is invalid or missing this field
 }

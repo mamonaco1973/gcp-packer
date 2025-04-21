@@ -1,54 +1,71 @@
 #!/bin/bash
 
+################################################################################
+# FULL DEPLOYMENT SCRIPT: GCP INFRASTRUCTURE + IMAGE BUILD + VM DEPLOYMENT
+# Automates:
+#   - Terraform infrastructure provisioning
+#   - Packer image builds (Linux + Windows)
+#   - Image discovery for latest builds
+#   - Terraform deployment using those images
+################################################################################
+
 #-------------------------------------------------------------------------------
-# STEP 0: Run environment validation script
+# STEP 0: VALIDATE ENVIRONMENT BEFORE EXECUTION
 #-------------------------------------------------------------------------------
+
 ./check_env.sh
 if [ $? -ne 0 ]; then
   echo "ERROR: Environment check failed. Exiting."
-  exit 1  # Hard exit if environment validation fails
+  exit 1
 fi
 
 #-------------------------------------------------------------------------------
-# STEP 1: Provision base infrastructure 
+# STEP 1: PROVISION CORE INFRASTRUCTURE USING TERRAFORM
 #-------------------------------------------------------------------------------
-cd 01-infrastructure                # Navigate to Terraform infra folder
-terraform init                      # Initialize Terraform plugins/backend
-terraform apply -auto-approve       # Apply infrastructure configuration without prompt
-cd ..                               # Return to root directory
 
+cd 01-infrastructure
+terraform init
+terraform apply -auto-approve
+cd ..
 
-# Extract the project_id using jq
+#-------------------------------------------------------------------------------
+# STEP 2: EXTRACT PROJECT AND AUTHENTICATE TO GCP
+#-------------------------------------------------------------------------------
+
 project_id=$(jq -r '.project_id' "./credentials.json")
 
 gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 
+#-------------------------------------------------------------------------------
+# STEP 3: RETRIEVE SECRET FOR PACKER USER PASSWORD FROM SECRET MANAGER
+#-------------------------------------------------------------------------------
+
 password=$(gcloud secrets versions access latest --secret="packer-credentials" | jq -r '.password')
 
-cd 02-packer
-cd linux
+#-------------------------------------------------------------------------------
+# STEP 4: BUILD LINUX IMAGE USING PACKER
+#-------------------------------------------------------------------------------
 
+cd 02-packer/linux
 packer init .
 
 packer build \
-  -var="project_id=$project_id"  \
+  -var="project_id=$project_id" \
   -var="password=$password" \
   linux_image.pkr.hcl
 
-cd ..
-
-cd windows
-# packer init .
-
+cd ../windows
 packer build \
-  -var="project_id=$project_id"  \
+  -var="project_id=$project_id" \
   -var="password=$password" \
   windows_image.pkr.hcl
 
-cd ..
+cd ../..
 
-cd ..
+#-------------------------------------------------------------------------------
+# STEP 5: LOOKUP LATEST PACKER IMAGES FROM GCP BY FAMILY
+#-------------------------------------------------------------------------------
 
 games_image=$(gcloud compute images list \
   --filter="name~'^games-image' AND family=games-images" \
@@ -63,7 +80,6 @@ fi
 
 echo "NOTE: Games image is $games_image"
 
-
 desktop_image=$(gcloud compute images list \
   --filter="name~'^desktop-image' AND family=desktop-images" \
   --sort-by="~creationTimestamp" \
@@ -77,14 +93,17 @@ fi
 
 echo "NOTE: Desktop image is $desktop_image"
 
+#-------------------------------------------------------------------------------
+# STEP 6: DEPLOY VM RESOURCES USING LATEST IMAGES
+#-------------------------------------------------------------------------------
 
 cd 03-deploy
+
+# Apply Terraform deployment with dynamic image names and no manual prompt
 terraform init
 terraform apply \
-    -var="games_image_name=$games_image" \
-    -var="desktop_image_name=$desktop_image" \
-    -auto-approve
+  -var="games_image_name=$games_image" \
+  -var="desktop_image_name=$desktop_image" \
+  -auto-approve
+
 cd ..
-
-
-
