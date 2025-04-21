@@ -59,7 +59,7 @@ source "googlecompute" "windows_image" {
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   communicator          = "winrm"
-  winrm_username        = "builder"  
+  winrm_username        = "packer_user"  
   winrm_password        = var.password
   winrm_insecure = true             
   winrm_use_ntlm = true             
@@ -68,6 +68,10 @@ source "googlecompute" "windows_image" {
   network               = "packer-vpc"
   subnetwork            = "packer-subnet"
   
+    metadata = {
+    windows-startup-script-cmd = "winrm quickconfig -quiet & net user /add packer_user & net localgroup administrators packer_user /add & winrm set winrm/config/service/auth @{Basic=\"true\"}"
+  }
+
   tags = ["allow-winrm"]
 }
 
