@@ -55,11 +55,11 @@ source "googlecompute" "windows_image" {
   zone                  = var.zone
   machine_type          = "e2-standard-2"
   source_image_family   = var.source_image_family
-  disk_size             = 64
+  disk_size             = 128
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   communicator          = "winrm"
-  winrm_username        = "Administrator"  
+  winrm_username        = "builder"  
   winrm_password        = var.password
   winrm_insecure = true             
   winrm_use_ntlm = true             
