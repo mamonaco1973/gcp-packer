@@ -46,6 +46,18 @@ variable "password" {
   type        = string
 }
 
+variable "vpc" {
+  description = "vpc"
+  type        = string
+  default     = "packer-vpc"
+}
+
+variable "subnet" {
+  description = "subnet"
+  type        = string
+  default     = "packer-subnet"
+}
+
 ############################################
 #      MAIN SOURCE BLOCK - GCP WINDOWS IMAGE
 ############################################
@@ -58,6 +70,7 @@ source "googlecompute" "windows_image" {
   disk_size             = 128
   disk_type             = "pd-balanced"
   image_name            = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  image_family          = "desktop-images"   
   communicator          = "winrm"
   winrm_username        = "packer_user"  
   winrm_password        = var.password
@@ -65,8 +78,8 @@ source "googlecompute" "windows_image" {
   winrm_use_ntlm = true             
   winrm_use_ssl  = true             
   
-  network               = "packer-vpc"
-  subnetwork            = "packer-subnet"
+  network               = var.vpc
+  subnetwork            = var.subnet
   
   metadata = {
     windows-startup-script-cmd = <<EOT
