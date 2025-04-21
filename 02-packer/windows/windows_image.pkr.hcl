@@ -64,6 +64,11 @@ source "googlecompute" "windows_image" {
   winrm_insecure = true             
   winrm_use_ntlm = true             
   winrm_use_ssl  = true             
+  
+  network               = "packer-vpc"
+  subnetwork            = "packer-subnet"
+  
+  tags = ["allow-winrm"]
 }
 
 ############################################
