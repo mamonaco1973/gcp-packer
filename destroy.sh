@@ -28,7 +28,10 @@ echo "NOTE: Desktop image is $desktop_image"
 
 cd 03-deploy
 terraform init
-terraform destroy -var="games_image_name=$games_image" -auto-approve
+terraform destroy \
+     -var="games_image_name=$games_image" \
+     -var="desktop_image_name=$desktop_image" \
+     -auto-approve
 cd ..
 
 
