@@ -8,12 +8,12 @@ data "google_compute_image" "games_packer_image" {
   project = local.credentials.project_id              # GCP project ID
 }
 
-variable "deskop_image_name" {
+variable "desktop_image_name" {
   description = "Name of the Packer built desktop image"
   type        = string                                                       
 }
 
 data "google_compute_image" "desktop_packer_image" {
-  name    = var.deskop_image_name                    # Name of the image
+  name    = var.desktop_image_name                    # Name of the image
   project = local.credentials.project_id              # GCP project ID
 }
