@@ -140,7 +140,7 @@ build {
   provisioner "powershell" {
     inline = [
       "Write-Host 'Running Sysprep for GCP image finalization...'",
-      "C:\\Windows\\System32\\Sysprep\\Sysprep.exe /oobe /generalize /shutdown /quiet"
+      "C:\\Windows\\System32\\Sysprep\\Sysprep.exe /generalize /shutdown /quiet"
     ]
   }
 }
