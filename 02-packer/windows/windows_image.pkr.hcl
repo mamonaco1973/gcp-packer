@@ -68,14 +68,14 @@ source "googlecompute" "windows_image" {
   network               = "packer-vpc"
   subnetwork            = "packer-subnet"
   
-   metadata = {
+  metadata = {
     windows-startup-script-cmd = <<EOT
         winrm quickconfig -quiet ^
-        & net user /add packer_user "${var.password}" ^
-        & net localgroup administrators packer_user /add ^
-        & winrm set winrm/config/service/auth @{Basic="true"}
-      EOT
-}
+        && net user packer_user "${var.password}" /add /Y ^
+        && net localgroup administrators packer_user /add ^
+        && winrm set winrm/config/service/auth @{Basic="true"}
+    EOT
+  }
 
   tags = ["allow-winrm"]
 }
