@@ -28,6 +28,7 @@ password=$(gcloud secrets versions access latest --secret="packer-credentials" |
 
 cd 02-packer
 cd linux
+
 packer init .
 
 packer build \
@@ -61,6 +62,21 @@ if [[ -z "$games_image" ]]; then
 fi
 
 echo "NOTE: Games image is $games_image"
+
+
+desktop_image=$(gcloud compute images list \
+  --filter="name~'^desktop-image' AND family=desktop-images" \
+  --sort-by="~creationTimestamp" \
+  --limit=1 \
+  --format="value(name)")
+
+if [[ -z "$desktop_image" ]]; then
+  echo "ERROR: No latest image found for 'desktop-image' in family 'desktop-images'."
+  exit 1
+fi
+
+echo "NOTE: Desktop image is $desktop_image"
+
 
 cd 03-deploy
 terraform init
