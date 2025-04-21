@@ -1,5 +1,5 @@
 resource "google_compute_instance" "desktop_vm" {
-  name         = "desktop_vm"               # Name of the instance.
+  name         = "desktop-vm"               # Name of the instance.
   machine_type = "e2-standard-2"            # Machine type for cost-efficient workloads.
   zone         = "us-central1-a"            # Deployment zone for the instance.
   allow_stopping_for_update = true
