@@ -29,22 +29,22 @@ password=$(gcloud secrets versions access latest --secret="packer-credentials" |
 cd 02-packer
 cd linux
 
-packer init .
+# packer init .
 
-packer build \
-  -var="project_id=$project_id"  \
-  -var="password=$password" \
-  linux_image.pkr.hcl
+# packer build \
+#   -var="project_id=$project_id"  \
+#   -var="password=$password" \
+#   linux_image.pkr.hcl
 
 cd ..
 
 cd windows
-packer init .
+# packer init .
 
-packer build \
-  -var="project_id=$project_id"  \
-  -var="password=$password" \
-  windows_image.pkr.hcl
+# packer build \
+#   -var="project_id=$project_id"  \
+#   -var="password=$password" \
+#   windows_image.pkr.hcl
 
 cd ..
 
