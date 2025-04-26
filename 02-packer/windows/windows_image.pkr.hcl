@@ -100,6 +100,10 @@ source "googlecompute" "windows_image" {
 build {
   sources = ["source.googlecompute.windows_image"]
 
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
+  }
+
   provisioner "windows-update" {}
 
   provisioner "windows-restart" {
