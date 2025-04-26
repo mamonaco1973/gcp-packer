@@ -2,11 +2,63 @@
 
 In the GCP solution, we use Packer to build and deploy custom **Linux** and **Windows** images to Compute Engine.
 
-- For **Linux**, we create an Ubuntu-based image with Apache installed and deploy several retro-style HTML games.
+- For **Linux**, we create an Ubuntu-based image with Apache installed and deploy several retro-style HTML games. The source for the html games can be found at [https://gist.github.com/straker](https://gist.github.com/straker)
 - For **Windows**, we install Chrome and Firefox, apply the **latest Windows Updates**, and execute **Sysprep** using native PowerShell commands.
 - GCP **automatically installs WinRM**, but additional setup is required — we use a **metadata startup script** to set the WinRM password and configure authentication.
 - We define a **custom firewall rule** to allow WinRM traffic (TCP 5986) so that the Windows instance is accessible for remote management.
 - Image builds run within a custom **VPC and subnet** that are pre-provisioned to support isolated, controlled access.
 - The Windows image supports **RDP** access using a local `packer` account, and the Linux image is tested via **HTTP** on port 80.
 
+## Packer Workflow
+
+![workflow](packer-workflow-gcp.png)
+
+## Prerequisites
+
+* [A Google Cloud Account](https://console.cloud.google.com/)
+* [Install gcloud CLI](https://cloud.google.com/sdk/docs/install) 
+* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
+* [Install Latest Packer](https://developer.hashicorp.com/packer/install)
+
+If this is your first time watching our content, we recommend starting with this video: [GCP + Terraform: Easy Setup](https://youtu.be/3spJpYX4f7I). It provides a step-by-step guide to properly configure Terraform, Packer, and the gcloud CLI.
+
+## Download this Repository
+
+```bash
+git clone https://github.com/mamonaco1973/gcp-packer.git
+cd gcp-packer
+```
+
+## Build the Code
+
+Run [check_env](check_env.sh) and [api_setup](api_setup.sh) then run [apply](apply.sh).
+
+```bash
+[...]
+```
+
+### Build Process Overview
+
+The build process is divided into three phases:
+
+1. **Phase 1:** Configure the network
+2. **Phase 2:** Use packer to build the `games` Image and `desktop` Image using the network infrastructure from Phase 1. This part of the build takes the longest - at least 20 minutes.
+3. **Phase 3:** Create the VM instances using the Images from Phase 2.
+
+## Tour of Build Output in the GCP Console
+
 ![gcp](./gcp-packer.png)
+
+## Test the Games Server
+
+To test the games simply navigate to the public IP address of deployed instance in a web browser.
+
+![games](games.png)
+
+## Test the Desktop Server
+
+To test the Desktop server you'll need to create an RDP session to the deployed instance. When prompted for credentials, use `packer` as the user id and then look up the password in the GCP console by viewing the `packer-credentials` secret.
+
+![rdp](rdp.png)
+![desktop](desktop.png)
+
