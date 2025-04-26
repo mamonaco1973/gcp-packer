@@ -83,5 +83,6 @@ To test the games simply navigate to the public IP address of deployed instance 
 To test the Desktop server you'll need to create an RDP session to the deployed instance. When prompted for credentials, use `packer` as the user id and then look up the password in the GCP console by viewing the `packer-credentials` secret.
 
 ![rdp](rdp.png)
+
 ![desktop](desktop.png)
 
