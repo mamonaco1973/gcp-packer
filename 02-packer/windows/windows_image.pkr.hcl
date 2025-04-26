@@ -65,7 +65,7 @@ variable "subnet" {
 source "googlecompute" "windows_image" {
   project_id            = var.project_id
   zone                  = var.zone
-  machine_type          = "e2-standard-2"
+  machine_type          = "e2-standard-4"
   source_image_family   = var.source_image_family
   disk_size             = 128
   disk_type             = "pd-balanced"
