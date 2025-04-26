@@ -90,7 +90,7 @@ source "googlecompute" "windows_image" {
     EOT
   }
 
-  tags = ["allow-winrm"]
+  tags = ["allow-winrm","allow-rdp"]
 }
 
 ############################################

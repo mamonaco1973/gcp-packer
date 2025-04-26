@@ -34,6 +34,29 @@ cd gcp-packer
 Run [check_env](check_env.sh) and [api_setup](api_setup.sh) then run [apply](apply.sh).
 
 ```bash
+~/gcp-packer$ ./apply.sh
+NOTE: Validating that required commands are found in the PATH.
+NOTE: gcloud is found in the current PATH.
+NOTE: packer is found in the current PATH.
+NOTE: terraform is found in the current PATH.
+NOTE: jq is found in the current PATH.
+NOTE: All required commands are available.
+NOTE: Validating credentials.json and test the gcloud command
+Activated service account credentials for: [terraform-build@debug-project-446221.iam.gserviceaccount.com]
+Initializing the backend...
+Initializing provider plugins...
+- Finding latest version of hashicorp/google...
+- Finding latest version of hashicorp/random...
+- Installing hashicorp/google v6.32.0...
+- Installed hashicorp/google v6.32.0 (signed by HashiCorp)
+- Installing hashicorp/random v3.7.2...
+- Installed hashicorp/random v3.7.2 (signed by HashiCorp)
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
 [...]
 ```
 
