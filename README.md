@@ -64,7 +64,7 @@ Terraform has been successfully initialized!
 
 The build process is divided into three phases:
 
-1. **Phase 1:** Configure the network
+1. **Phase 1:** Configure the network and create the `packer` credentials stored in secrets manager.
 2. **Phase 2:** Use packer to build the `games` Image and `desktop` Image using the network infrastructure from Phase 1. This part of the build takes the longest - at least 20 minutes.
 3. **Phase 3:** Create the VM instances using the Images from Phase 2.
 
