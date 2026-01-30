@@ -31,7 +31,7 @@ GAMES_PUBLIC_IP=$(terraform output -raw games_public_ip)
 # DISPLAY RESULTS
 # ------------------------------------------------------------------------------
 echo "============================================================"
-echo " Google Cloud (GCE) Virtual Machine Endpoints"
+echo " Google Cloud Virtual Machine Endpoints"
 echo "============================================================"
 echo
 echo " Desktop VM Public IP:"
