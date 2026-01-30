@@ -1,68 +1,73 @@
-############################################
+# ==============================================================================
 # GOOGLE COMPUTE INSTANCE: DESKTOP VM
-############################################
-
-# Provisions a Windows-based VM using a Packer-built image
-# Attached to a predefined VPC and subnet with public access via ephemeral IP
-# Includes startup script execution via PowerShell
+# ==============================================================================
+# Provisions a Windows-based Google Compute Engine VM using a
+# Packer-built desktop image.
+#
+# The instance is attached to an existing VPC and subnet and is assigned
+# an ephemeral public IP address for remote access and updates.
+# ==============================================================================
 resource "google_compute_instance" "desktop_vm" {
-  name         = "desktop-vm"              # Human-friendly name for this VM in the GCP console
-  machine_type = "e2-standard-2"           # Cost-effective general-purpose machine type (2 vCPUs, 8 GB RAM)
-  zone         = "us-central1-a"           # Deployment zone—must match the subnet’s region
-  allow_stopping_for_update = true         # Allows Terraform to stop/start the VM safely during updates instead of recreating it
+  name         = "desktop-vm"
+  machine_type = "e2-standard-2"
+  zone         = "us-central1-a"
 
-  ########################################
-  # BOOT DISK CONFIGURATION
-  ########################################
+  # Allows the instance to be safely stopped and restarted during
+  # update operations instead of forcing recreation.
+  allow_stopping_for_update = true
 
-  # Use a Packer-created custom image as the boot disk OS image
-  # Ensures the VM starts with a pre-configured environment (e.g., software, users)
+  # --------------------------------------------------------------------------
+  # Boot disk configuration
+  # --------------------------------------------------------------------------
+  # Initializes the boot disk from the Packer-built Windows image to
+  # ensure a consistent, preconfigured desktop environment.
   boot_disk {
     initialize_params {
-      image = data.google_compute_image.desktop_packer_image.self_link  # Fully qualified link to the Packer-built desktop image
+      image = data.google_compute_image.desktop_packer_image.self_link
     }
   }
 
-  ########################################
-  # NETWORK INTERFACE CONFIGURATION
-  ########################################
-
-  # Attach to the defined VPC and subnetwork
-  # Enables connectivity to other GCP services and the internet
+  # --------------------------------------------------------------------------
+  # Network interface configuration
+  # --------------------------------------------------------------------------
+  # Attaches the instance to the target VPC and subnet and assigns an
+  # ephemeral NAT IP address for external connectivity.
   network_interface {
-    network    = data.google_compute_network.packer_vpc.id        # Connects to existing VPC (data source must be defined elsewhere)
-    subnetwork = data.google_compute_subnetwork.packer_subnet.id  # Ties instance to a specific subnet (CIDR must match deployment logic)
-    access_config {}  # Creates and attaches a one-time ephemeral public IP (NAT-enabled) for remote desktop or updates
+    network    = data.google_compute_network.packer_vpc.id
+    subnetwork = data.google_compute_subnetwork.packer_subnet.id
+
+    access_config {}
   }
 
-  ########################################
-  # STARTUP SCRIPT EXECUTION (WINDOWS)
-  ########################################
-
-  # Use metadata to deliver a PowerShell script to the Windows instance at boot time
-  # The script is templated with dynamic variables such as the image name
+  # --------------------------------------------------------------------------
+  # Startup script execution (Windows)
+  # --------------------------------------------------------------------------
+  # Delivers a PowerShell startup script to the instance at boot time.
+  # templatefile() is used to inject runtime values into the script.
   metadata = {
-    windows-startup-script-ps1 = templatefile("./scripts/startup_script.ps1", {
-      image = data.google_compute_image.desktop_packer_image.name  # Pass image name into startup script for reference/logging
-    })
+    windows-startup-script-ps1 = templatefile(
+      "./scripts/startup_script.ps1",
+      {
+        image = data.google_compute_image.desktop_packer_image.name
+      }
+    )
   }
 
-  ########################################
-  # FIREWALL TAGS
-  ########################################
-
-  # Tags used by firewall rules to allow inbound traffic
-  # Must match target tags in `google_compute_firewall` rules (e.g., for RDP access)
-  tags = ["allow-rdp"]  # Enables port 3389 access from the internet (used for Remote Desktop Protocol)
+  # --------------------------------------------------------------------------
+  # Firewall tags
+  # --------------------------------------------------------------------------
+  # Applies network tags used by firewall rules to permit inbound RDP
+  # traffic to the instance.
+  tags = ["allow-rdp"]
 }
 
-############################################
-# OUTPUT: PUBLIC IP OF THE DESKTOP VM
-############################################
-
-# Outputs the public IP address of the provisioned desktop VM
-# Useful for automation, dashboards, or manual access via RDP
+# ==============================================================================
+# OUTPUT: DESKTOP VM PUBLIC IP ADDRESS
+# ==============================================================================
+# Exposes the VM's ephemeral public NAT IP address for RDP access and
+# automation workflows.
+# ==============================================================================
 output "desktop_public_ip" {
-  value       = google_compute_instance.desktop_vm.network_interface[0].access_config[0].nat_ip  # Pulls the NAT-assigned public IP
-  description = "The public IP address of the Desktop VM."  # Friendly label for downstream visibility
+  value       = google_compute_instance.desktop_vm.network_interface[0].access_config[0].nat_ip
+  description = "Public IP address of the Desktop VM"
 }

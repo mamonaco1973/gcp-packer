@@ -1,88 +1,96 @@
 #!/bin/bash
+# ==============================================================================
+# File: destroy.sh
+# ==============================================================================
+# Purpose:
+#   Orchestrates a full cleanup workflow:
+#     - Resolves the latest Packer image names (games + desktop) by family
+#     - Destroys deployed VM infrastructure using Terraform
+#     - Deletes custom images matching known prefixes (games|desktop)
+#     - Destroys base infrastructure (VPC, subnet, firewall rules, etc.)
+#
+# Notes:
+#   - This script assumes gcloud is authenticated and has access to the
+#     target project.
+#   - Image deletion is best-effort; failures are logged and cleanup
+#     continues.
+# ==============================================================================
 
-################################################################################
-# FULL CLEANUP SCRIPT: DESTROYS INFRASTRUCTURE AND DELETES PACKER IMAGES
-# Safely destroys:
-#   - Deployed VM infrastructure
-#   - All custom Packer images starting with "games" or "desktop"
-################################################################################
+# ------------------------------------------------------------------------------
+# Step 1: Resolve the latest games image from the games-images family
+# ------------------------------------------------------------------------------
+games_image=$(
+  gcloud compute images list \
+    --filter="name~'^games-image' AND family=games-images" \
+    --sort-by="~creationTimestamp" \
+    --limit=1 \
+    --format="value(name)"
+)
 
-#-------------------------------------------------------------------------------
-# STEP 1: FETCH LATEST "games" IMAGE FROM GCP
-#-------------------------------------------------------------------------------
-
-games_image=$(gcloud compute images list \
-  --filter="name~'^games-image' AND family=games-images" \
-  --sort-by="~creationTimestamp" \
-  --limit=1 \
-  --format="value(name)")  # Grabs most recently created image from 'games-images' family
-
-if [[ -z "$games_image" ]]; then
-  echo "ERROR: No latest image found for 'games-image' in family 'games-images'."
-  exit 1  # Hard fail if no image found — we can't safely destroy without this input
+if [[ -z "${games_image}" ]]; then
+  echo "ERROR: No latest image found for family 'games-images'."
+  exit 1
 fi
 
-echo "NOTE: Games image is $games_image"
+echo "NOTE: Games image is ${games_image}"
 
-#-------------------------------------------------------------------------------
-# STEP 2: FETCH LATEST "desktop" IMAGE FROM GCP
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Step 2: Resolve the latest desktop image from the desktop-images family
+# ------------------------------------------------------------------------------
+desktop_image=$(
+  gcloud compute images list \
+    --filter="name~'^desktop-image' AND family=desktop-images" \
+    --sort-by="~creationTimestamp" \
+    --limit=1 \
+    --format="value(name)"
+)
 
-desktop_image=$(gcloud compute images list \
-  --filter="name~'^desktop-image' AND family=desktop-images" \
-  --sort-by="~creationTimestamp" \
-  --limit=1 \
-  --format="value(name)")  # Fetch most recent image from 'desktop-images' family
-
-if [[ -z "$desktop_image" ]]; then
-  echo "ERROR: No latest image found for 'desktop-image' in family 'desktop-images'."
-  exit 1  # Exit hard if image not found — prevents undefined destroy variables
+if [[ -z "${desktop_image}" ]]; then
+  echo "ERROR: No latest image found for family 'desktop-images'."
+  exit 1
 fi
 
-echo "NOTE: Desktop image is $desktop_image"
+echo "NOTE: Desktop image is ${desktop_image}"
 
-#-------------------------------------------------------------------------------
-# STEP 3: DESTROY DEPLOYED INFRASTRUCTURE
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Step 3: Destroy deployed infrastructure (VMs, IPs, etc.)
+# ------------------------------------------------------------------------------
+cd 03-deploy || exit 1
+terraform init
 
-cd 03-deploy
-terraform init  # Reinitialize providers and backend in case it's stale
-
-# Destroy VMs and associated infrastructure using the latest image names
 terraform destroy \
-  -var="games_image_name=$games_image" \
-  -var="desktop_image_name=$desktop_image" \
-  -auto-approve  # Skip confirmation for full wipe (only safe in scripted/CI envs)
+  -var="games_image_name=${games_image}" \
+  -var="desktop_image_name=${desktop_image}" \
+  -auto-approve
 
-cd ..
+cd .. || exit 1
 
-#-------------------------------------------------------------------------------
-# STEP 4: DELETE PACKER-BUILT IMAGES (GAMES & DESKTOP PREFIX)
-#-------------------------------------------------------------------------------
-
+# ------------------------------------------------------------------------------
+# Step 4: Delete Packer-built images matching known prefixes
+# ------------------------------------------------------------------------------
 echo "NOTE: Fetching images starting with 'games' or 'desktop'..."
 
-# List all custom images that match known prefixes
-image_list=$(gcloud compute images list \
-  --format="value(name)" \
-  --filter="name~'^(games|desktop)'")  # Regex match for names starting with 'games' or 'desktop'
+image_list=$(
+  gcloud compute images list \
+    --format="value(name)" \
+    --filter="name~'^(games|desktop)'"
+)
 
-# Check if any were found
-if [ -z "$image_list" ]; then
-  echo "NOTE: No images found starting with 'games' or 'desktop'. Continuing..."
+if [[ -z "${image_list}" ]]; then
+  echo "NOTE: No images found starting with 'games' or 'desktop'."
 else
   echo "NOTE: Deleting images..."
-  for image in $image_list; do
-    echo "NOTE: Deleting image: $image"
-    gcloud compute images delete "$image" --quiet || echo "WARNING: Failed to delete image: $image"  # Continue even if deletion fails
+  for image in ${image_list}; do
+    echo "NOTE: Deleting image: ${image}"
+    gcloud compute images delete "${image}" --quiet \
+      || echo "WARNING: Failed to delete image: ${image}"
   done
 fi
 
-#-------------------------------------------------------------------------------
-# STEP 5: DESTROY BASE INFRASTRUCTURE (VPC, FIREWALL, ETC.)
-#-------------------------------------------------------------------------------
-
-cd 01-infrastructure
-terraform init  # Reinitialize infra directory
-terraform destroy -auto-approve  # Nuke base resources (networking, firewalls, etc.)
-cd ..
+# ------------------------------------------------------------------------------
+# Step 5: Destroy base infrastructure (VPC, firewall rules, etc.)
+# ------------------------------------------------------------------------------
+cd 01-infrastructure || exit 1
+terraform init
+terraform destroy -auto-approve
+cd .. || exit 1

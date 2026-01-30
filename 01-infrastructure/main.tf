@@ -1,26 +1,35 @@
-############################################
+# ==============================================================================
 # GOOGLE CLOUD PROVIDER CONFIGURATION
-############################################
-
-# Configures the Google Cloud provider block for all Terraform resources
-# This defines *how* Terraform talks to GCP, and with *what identity*
+# ==============================================================================
+# Configures the Google Cloud provider used by all Terraform resources.
+#
+# This block defines:
+#   - Which GCP project Terraform operates against
+#   - Which identity Terraform uses for authentication and authorization
+#
+# Authentication is performed using a local service account credentials
+# file generated from Google Cloud IAM.
+# ==============================================================================
 provider "google" {
-  project     = local.credentials.project_id   # Dynamically pulls the project ID from decoded credentials (prevents hardcoding)
-  credentials = file("../credentials.json")    # Loads the full path to a local GCP service account credentials file
-                                               # ⚠️ Must be a properly formatted JSON file from IAM, or authentication will fail
-                                               # ⚠️ Ensure this file is secured and **never** committed to source control
+  project     = local.credentials.project_id
+  credentials = file("../credentials.json")
 }
 
-############################################
-# LOCAL VARIABLES: CREDENTIALS EXTRACTION
-############################################
-
-# Parses the service account JSON file to extract reusable properties
-# This avoids manually defining things like project_id or service_account_email
+# ==============================================================================
+# LOCAL VARIABLES: SERVICE ACCOUNT CREDENTIAL EXTRACTION
+# ==============================================================================
+# Decodes the Google Cloud service account credentials file and exposes
+# commonly used fields as local variables.
+#
+# Centralizing credential parsing avoids hardcoding values such as the
+# project ID or service account email throughout the configuration.
+#
+# Assumptions:
+#   - The credentials file exists at the specified relative path
+#   - The JSON structure matches the standard IAM service account format
+# ==============================================================================
 locals {
-  credentials = jsondecode(file("../credentials.json"))  # Decodes the raw JSON file into a usable map object
-                                                         # Contains fields like project_id, client_email, private_key, etc.
+  credentials = jsondecode(file("../credentials.json"))
 
-  service_account_email = local.credentials.client_email # Pulls out the `client_email` field (used for IAM roles, bindings, logging)
-                                                         # ⚠️ Will break if JSON structure is invalid or missing this field
+  service_account_email = local.credentials.client_email
 }

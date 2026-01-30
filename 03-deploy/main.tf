@@ -1,37 +1,46 @@
-############################################
+# ==============================================================================
 # GOOGLE CLOUD PROVIDER CONFIGURATION
-############################################
-
-# Configures the Google Cloud provider to interact with the specified project
-# Uses a local credentials JSON file to authenticate Terraform operations
-# Ensures that all resources are provisioned under the correct GCP project and identity
+# ==============================================================================
+# Configures the Google Cloud provider used by Terraform to manage
+# resources within the target GCP project.
+#
+# Authentication is performed using a local service account credentials
+# file. The project identifier is derived dynamically from the decoded
+# credentials to avoid hardcoding environment-specific values.
+# ==============================================================================
 provider "google" {
-  project     = local.credentials.project_id  # Pulls the project ID from the decoded credentials file (ensures dynamic, environment-specific use)
-  credentials = file("../credentials.json")   # Loads raw credentials file from parent directory (assumes file exists and is properly secured)
+  project     = local.credentials.project_id
+  credentials = file("../credentials.json")
 }
 
-############################################
-# LOCAL VARIABLES: CREDENTIALS PARSING
-############################################
-
-# Decodes the service account credentials file into a usable map
-# Extracts useful fields like project ID and service account email for later reference
+# ==============================================================================
+# LOCAL VARIABLES: SERVICE ACCOUNT CREDENTIAL PARSING
+# ==============================================================================
+# Decodes the Google Cloud service account credentials file and exposes
+# commonly referenced fields as local variables.
+#
+# Centralizing credential parsing ensures consistent usage of the
+# project ID and service account identity across the configuration.
+# ==============================================================================
 locals {
-  credentials = jsondecode(file("../credentials.json")) # Converts JSON content into a map structure (now accessible via dot notation)
-  service_account_email = local.credentials.client_email # Explicitly extracts the service account's email (can be used for IAM bindings or audit logs)
+  credentials = jsondecode(file("../credentials.json"))
+
+  service_account_email = local.credentials.client_email
 }
 
-############################################
+# ==============================================================================
 # DATA SOURCES: EXISTING NETWORK INFRASTRUCTURE
-############################################
-
-# Lookup existing VPC by name from the current project
+# ==============================================================================
+# Resolves references to pre-existing network resources in the project.
+#
+# These data sources allow Terraform to attach new resources to an
+# existing VPC and subnet without managing their lifecycle.
+# ==============================================================================
 data "google_compute_network" "packer_vpc" {
-  name = var.vpc_name  # Dynamically pull the VPC name from input variable
+  name = var.vpc_name
 }
 
-# Lookup existing subnet by name and region
 data "google_compute_subnetwork" "packer_subnet" {
-  name   = var.subnet_name   # Dynamically pull subnet name from input variable
-  region = "us-central1"     # Region must match the one where subnet is deployed
+  name   = var.subnet_name
+  region = "us-central1"
 }

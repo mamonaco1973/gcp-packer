@@ -1,37 +1,62 @@
 #!/bin/bash
+# ==============================================================================
+# File: check_env.sh
+# ==============================================================================
+# Purpose:
+#   Validates that all required command-line tools are available and that
+#   Google Cloud authentication can be performed using a local service
+#   account credentials file.
+#
+# Behavior:
+#   - Verifies required binaries exist in the current PATH
+#   - Fails fast if any required command is missing
+#   - Validates presence of credentials.json
+#   - Attempts gcloud authentication using the service account key
+# ==============================================================================
 
-echo "NOTE: Validating that required commands are found in the PATH."
+echo "NOTE: Validating that required commands are available in PATH."
 
-# List of required commands
+# ------------------------------------------------------------------------------
+# Required command-line tools
+# ------------------------------------------------------------------------------
 commands=("gcloud" "packer" "terraform" "jq")
 
-# Flag to track if all commands are found
+# Track overall validation status
 all_found=true
 
-# Iterate through each command and check if it's available
+# ------------------------------------------------------------------------------
+# Verify each required command is available
+# ------------------------------------------------------------------------------
 for cmd in "${commands[@]}"; do
-  if ! command -v "$cmd" &> /dev/null; then
-    echo "ERROR: $cmd is not foundin the current PATH."
+  if ! command -v "${cmd}" > /dev/null 2>&1; then
+    echo "ERROR: ${cmd} is not found in the current PATH."
     all_found=false
   else
-    echo "NOTE: $cmd is found in the current PATH."
+    echo "NOTE: ${cmd} is found in the current PATH."
   fi
 done
 
-# Final status
-if [ "$all_found" = true ]; then
+# ------------------------------------------------------------------------------
+# Fail if any required command is missing
+# ------------------------------------------------------------------------------
+if [ "${all_found}" = true ]; then
   echo "NOTE: All required commands are available."
 else
-  echo "ERROR: One or more commands are missing."
+  echo "ERROR: One or more required commands are missing."
   exit 1
 fi
 
-echo "NOTE: Validating credentials.json and test the gcloud command"
+# ------------------------------------------------------------------------------
+# Validate credentials file exists
+# ------------------------------------------------------------------------------
+echo "NOTE: Validating credentials.json and testing gcloud authentication."
 
-# Check if the file "./credentials.json" exists
 if [[ ! -f "./credentials.json" ]]; then
   echo "ERROR: The file './credentials.json' does not exist." >&2
   exit 1
 fi
 
+# ------------------------------------------------------------------------------
+# Authenticate gcloud using the service account credentials
+# ------------------------------------------------------------------------------
 gcloud auth activate-service-account --key-file="./credentials.json"

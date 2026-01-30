@@ -1,3 +1,11 @@
+# ==============================================================================
+# PACKER CONFIGURATION: REQUIRED PLUGINS
+# ==============================================================================
+# Defines the required Packer plugins and their versions.
+#
+# Pinning plugin versions ensures reproducible builds and prevents
+# unexpected behavior from upstream plugin changes.
+# ==============================================================================
 packer {
   required_plugins {
     googlecompute = {
@@ -6,74 +14,112 @@ packer {
     }
   }
 }
-############################################
-# LOCALS: TIMESTAMP UTILITY
-############################################
 
+# ==============================================================================
+# LOCAL VARIABLES: TIMESTAMP UTILITY
+# ==============================================================================
+# Generates a compact timestamp suitable for use in resource names.
+#
+# The timestamp is stripped of separators to produce a sortable,
+# collision-resistant suffix for image naming.
+# ==============================================================================
 locals {
-  timestamp = regex_replace(timestamp(), "[- TZ:]", "") # Generate compact timestamp (YYYYMMDDHHMMSS)
-                                                       # Used for unique image names
+  timestamp = regex_replace(timestamp(), "[- TZ:]", "")
 }
 
+# ==============================================================================
+# INPUT VARIABLES: BUILD PARAMETERS
+# ==============================================================================
+# Defines externalized configuration values used by the Packer build.
+# ==============================================================================
 variable "project_id" {
-  description = "GCP Project ID"
+  description = "GCP project identifier used for image builds"
   type        = string
   default     = "debug-project-446221"
 }
 
 variable "zone" {
-  description = "GCP Zone"
+  description = "GCP zone in which the temporary build instance is created"
   type        = string
   default     = "us-central1-a"
 }
 
 variable "source_image_family" {
-  description = "Source image family to base the build on (e.g., ubuntu-2404-lts-amd64)"
+  description = "Base image family used as the build starting point"
   type        = string
   default     = "ubuntu-2404-lts-amd64"
 }
 
 variable "password" {
+<<<<<<< HEAD
   description = "The password for the packer account"    # Will be passed into SSH provisioning script
   default     = "Password%$#@!"                          # Must be overridden securely via env or CLI
+=======
+  description = "Password assigned to the Packer-created account"
+  type        = string
+  default     = ""
+>>>>>>> b7c478011ee489f0807938fc77717e3db4a490ab
 }
 
+# ==============================================================================
+# SOURCE IMAGE DEFINITION: GOOGLE COMPUTE ENGINE
+# ==============================================================================
+# Defines the Google Compute Engine source image used by Packer.
+#
+# A temporary VM is launched from the specified source image family,
+# provisioned, and then captured as a reusable custom image.
+# ==============================================================================
 source "googlecompute" "packer_build_image" {
-  project_id            = var.project_id
-  zone                  = var.zone
-  source_image_family   = var.source_image_family # Specifies the base image family
-  ssh_username          = "ubuntu"                # Specify the SSH username
-  machine_type          = "e2-micro"              # Smallest machine type for cost-effectiveness
+  project_id          = var.project_id
+  zone                = var.zone
+  source_image_family = var.source_image_family
+  ssh_username        = "ubuntu"
+  machine_type        = "e2-micro"
 
-  image_name            = "games-image-${local.timestamp}" # Use local.timestamp directly
-  image_family          = "games-images"          # Image family to group related images
-  disk_size             = 20                      # Disk size in GB
+  image_name   = "games-image-${local.timestamp}"
+  image_family = "games-images"
+  disk_size    = 20
 }
 
+# ==============================================================================
+# BUILD CONFIGURATION: IMAGE PROVISIONING WORKFLOW
+# ==============================================================================
+# Orchestrates the provisioning steps executed against the temporary
+# build instance before image capture.
+# ==============================================================================
 build {
   sources = ["source.googlecompute.packer_build_image"]
 
-  # Create a temp directory for HTML files
+  # --------------------------------------------------------------------------
+  # Prepare temporary directory for application assets
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    inline = ["mkdir -p /tmp/html"]                      # Ensure target directory exists on VM
+    inline = ["mkdir -p /tmp/html"]
   }
 
-  # Copy local HTML files to the instance
+  # --------------------------------------------------------------------------
+  # Transfer static HTML content to the build instance
+  # --------------------------------------------------------------------------
   provisioner "file" {
-    source      = "./html/"                              # Source directory from local machine
-    destination = "/tmp/html/"                           # Target directory inside VM
+    source      = "./html/"
+    destination = "/tmp/html/"
   }
 
-  # Run install script inside the instance
+  # --------------------------------------------------------------------------
+  # Install and configure required system packages
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    script = "./install.sh"                              # Installs and configures required packages
+    script = "./install.sh"
   }
 
-  # Run SSH configuration script, passing in a password variable
+  # --------------------------------------------------------------------------
+  # Configure SSH access using a supplied password
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    script = "./config_ssh.sh"                           # Custom script to enable SSH password login
+    script = "./config_ssh.sh"
+
     environment_vars = [
-      "PACKER_PASSWORD=${var.password}"                  # Export password to the script environment
+      "PACKER_PASSWORD=${var.password}"
     ]
   }
 }
