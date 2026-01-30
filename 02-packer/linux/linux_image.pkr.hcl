@@ -18,6 +18,7 @@ locals {
 variable "project_id" {
   description = "GCP Project ID"
   type        = string
+  default     = "debug-project-446221"
 }
 
 variable "zone" {
@@ -34,7 +35,7 @@ variable "source_image_family" {
 
 variable "password" {
   description = "The password for the packer account"    # Will be passed into SSH provisioning script
-  default     = ""                                       # Must be overridden securely via env or CLI
+  default     = "Password%$#@!"                          # Must be overridden securely via env or CLI
 }
 
 source "googlecompute" "packer_build_image" {
