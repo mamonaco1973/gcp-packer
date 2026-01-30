@@ -51,14 +51,7 @@ variable "source_image_family" {
 }
 
 variable "password" {
-<<<<<<< HEAD
   description = "The password for the packer account"    # Will be passed into SSH provisioning script
-  default     = "Password%$#@!"                          # Must be overridden securely via env or CLI
-=======
-  description = "Password assigned to the Packer-created account"
-  type        = string
-  default     = ""
->>>>>>> b7c478011ee489f0807938fc77717e3db4a490ab
 }
 
 # ==============================================================================
