@@ -6,7 +6,7 @@
 #   Orchestrates a full GCP deployment workflow:
 #     - Provision core infrastructure with Terraform
 #     - Authenticate to GCP using a service account key
-#     - Retrieve the Packer password from Secret Manager
+#     - Read the Packer password from Terraform state
 #     - Build Linux and Windows images with Packer
 #     - Discover the latest images by family
 #     - Deploy test VMs using Terraform with the latest image names
@@ -31,7 +31,13 @@ fi
 cd 01-infrastructure || exit 1
 terraform init
 terraform apply -auto-approve
+password=$(terraform output -raw packer_password)
 cd .. || exit 1
+
+if [[ -z "${password}" ]]; then
+  echo "ERROR: Failed to read the packer password from Terraform state."
+  exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # Step 2: Extract project ID and authenticate to GCP
@@ -45,16 +51,7 @@ gcloud auth activate-service-account \
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 
 # ------------------------------------------------------------------------------
-# Step 3: Retrieve Packer password from Google Secret Manager
-# ------------------------------------------------------------------------------
-password=$(
-  gcloud secrets versions access latest \
-    --secret="packer-credentials" \
-  | jq -r '.password'
-)
-
-# ------------------------------------------------------------------------------
-# Step 4: Build images using Packer (Linux, then Windows)
+# Step 3: Build images using Packer (Linux, then Windows)
 # ------------------------------------------------------------------------------
 cd 02-packer/linux || exit 1
 packer init .
@@ -73,7 +70,7 @@ packer build \
 cd ../.. || exit 1
 
 # ------------------------------------------------------------------------------
-# Step 5: Resolve latest images from GCP by family
+# Step 4: Resolve latest images from GCP by family
 # ------------------------------------------------------------------------------
 games_image=$(
   gcloud compute images list \
@@ -106,7 +103,7 @@ fi
 echo "NOTE: Desktop image is ${desktop_image}"
 
 # ------------------------------------------------------------------------------
-# Step 6: Deploy VM resources using Terraform and latest image names
+# Step 5: Deploy VM resources using Terraform and latest image names
 # ------------------------------------------------------------------------------
 cd 03-deploy || exit 1
 terraform init
@@ -119,7 +116,7 @@ terraform apply \
 cd ..
 
 #-------------------------------------------------------------------------------
-# STEP 7: Validate the build.
+# STEP 6: Validate the build.
 #-------------------------------------------------------------------------------
 
 ./validate.sh

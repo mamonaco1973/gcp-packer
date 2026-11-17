@@ -2,32 +2,32 @@
 
 Two custom Compute Engine images built with **Packer** and deployed with
 **Terraform**: a Linux **games** image, Ubuntu 24.04 with Apache serving a
-dozen retro HTML games, and a Windows **desktop** image, Windows Server 2022
+dozen retro HTML games, and a Windows **desktop** image, Windows Server 2025
 with the latest updates, Chrome and Firefox. Both images carry a local
-`packer` account whose password comes from Secret Manager, and Terraform
-launches one VM from each.
+`packer` account whose password Terraform generates, and Terraform launches
+one VM from each.
 
 ![Games server](games.png)
 
 | Piece | Where | Role |
 |---|---|---|
 | **games-image** | image family `games-images` | Ubuntu 24.04 + Apache + 12 HTML games, `packer` sudo user, 20 GB disk |
-| **desktop-image** | image family `desktop-images` | Windows Server 2022 + Windows updates, Chrome, Firefox, `packer` admin user, 128 GB disk; sysprepped |
+| **desktop-image** | image family `desktop-images` | Windows Server 2025 + Windows updates, Chrome, Firefox, `packer` admin user, 128 GB disk; sysprepped |
 | **games-vm** | `packer-subnet`, `us-central1-a` | `e2-micro` from the newest games image; public IP |
 | **desktop-vm** | `packer-subnet`, `us-central1-a` | `e2-standard-2` from the newest desktop image; public IP |
-| **Secret Manager** | global | `packer-credentials`: the `packer` user and a generated password |
+| **packer password** | `01-infrastructure` Terraform state | `random_password.generated`; `get_password.sh` prints it |
 
 ## Architecture
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
-  <img alt="Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 LTS family, with Apache serving twelve HTML games, and a desktop image from the Windows Server 2022 family, built in packer-vpc over WinRM, with Windows updates, Chrome and Firefox, sysprepped. Both builds read the packer account password from Secret Manager. Terraform then launches a VM from each image: a browser reaches the games VM over HTTP, and an RDP client reaches the Windows desktop VM." src="architecture-light.svg">
+  <img alt="Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 LTS family, with Apache serving twelve HTML games, and a desktop image from the Windows Server 2025 family, built in packer-vpc over WinRM, with Windows updates, Chrome and Firefox, sysprepped. Both builds set the packer account password, which Terraform generates and keeps in its state. Terraform then launches a VM from each image: a browser reaches the games VM over HTTP, and an RDP client reaches the Windows desktop VM." src="architecture-light.svg">
 </picture>
 
 Regenerate with `python3 make_diagram.py`.
 
 - **`01-infrastructure/`**: the VPC (`packer-vpc`) with `packer-subnet`
-  (10.0.0.0/24), the firewall rules, and the `packer-credentials` secret.
+  (10.0.0.0/24), the firewall rules, and the generated `packer` password.
 - **`02-packer/linux/`**: `linux_image.pkr.hcl`, the HTML games, and the
   install and user scripts.
 - **`02-packer/windows/`**: `windows_image.pkr.hcl` and the PowerShell
@@ -41,7 +41,7 @@ Regenerate with `python3 make_diagram.py`.
 
 1. Copies `html/` to the build VM and installs Apache, which serves the games
    from `/var/www/html`.
-2. Creates the `packer` user with the secret's password and passwordless sudo.
+2. Creates the `packer` user with the generated password and passwordless sudo.
 
 The Linux template doesn't set a network, so Packer builds it on the
 project's `default` VPC.
@@ -50,11 +50,13 @@ project's `default` VPC.
 
 1. A `windows-startup-script-cmd` in the build VM's metadata runs
    `winrm quickconfig`, creates a `packer_user` administrator with the
-   secret's password, and turns on WinRM Basic auth. Packer connects as
+   generated password, and turns on WinRM Basic auth. Packer connects as
    `packer_user` over WinRM HTTPS (5986).
 2. Installs every available Windows update, then reboots.
 3. Creates the `packer` user in Administrators and Remote Desktop Users,
-   installs Chrome and Firefox, and cleans up the desktop.
+   installs Chrome and Firefox, turns off the privacy settings screen that
+   Server 2025 shows on each new user's first sign-in, and keeps Server
+   Manager from opening at sign-in.
 4. Runs `Sysprep /generalize /shutdown`, so each VM boots clean.
 
 ## Firewall rules
@@ -95,7 +97,7 @@ watching our content, we recommend starting with this video:
 git clone https://github.com/mamonaco1973/gcp-packer.git
 cd gcp-packer
 ./api_setup.sh   # first time in a project
-./apply.sh       # 1: VPC + secret  2: games and desktop images (Packer)  3: VMs
+./apply.sh       # 1: VPC + password  2: games and desktop images (Packer)  3: VMs
 ```
 
 Everything deploys to `us-central1`. The Packer phase takes the longest, at
@@ -103,27 +105,23 @@ least 20 minutes, most of it Windows updates. `apply.sh` ends by running
 `validate.sh`:
 
 ```
-============================================================
- Google Cloud Virtual Machine Endpoints
-============================================================
+============================================================================
+Packer Images - Validation Output
+============================================================================
 
- Desktop VM Public IP:
-   203.0.113.20
+NOTE: Games URL:             http://203.0.113.10
+NOTE: Windows VM (RDP):      203.0.113.20
 
- Games VM Public IP:
-   203.0.113.10
-   http://203.0.113.10
+NOTE: Packer user:           packer
+NOTE: Packer password:       <generated>
 ```
 
 ## Try it
 
 1. Open the games URL and pick a game.
-2. Get the `packer` password:
-
-   ```bash
-   gcloud secrets versions access latest --secret=packer-credentials \
-     | jq -r .password
-   ```
+2. Get the `packer` password: `validate.sh` prints it, and so does
+   `./get_password.sh`, which reads it from the `01-infrastructure`
+   Terraform state.
 
 3. RDP to the desktop VM's IP as `.\packer`:
 
@@ -143,7 +141,7 @@ least 20 minutes, most of it Windows updates. `apply.sh` ends by running
 ## Teardown
 
 ```bash
-./destroy.sh     # destroys the VMs, deletes the games and desktop images, then destroys the VPC and secret
+./destroy.sh     # destroys the VMs, deletes the games and desktop images, then destroys the VPC and the password
 ```
 
 ## Notes

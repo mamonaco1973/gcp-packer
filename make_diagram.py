@@ -6,8 +6,9 @@ from inline SVG, so a `prefers-color-scheme` media query inside the document is
 silently dropped. The README pairs them with <picture>, which GitHub honours.
 
 A README diagram is studied, not narrated, so it is COMPLETE rather than
-minimal: both base images, both Packer builds, the secret that sets the packer
-password in both, and the two VMs launched from the new images are all on it.
+minimal: both base images, both Packer builds, the generated password that
+sets the packer account in both, and the two VMs launched from the new images
+are all on it.
 Run:  python3 make_diagram.py
 """
 
@@ -102,17 +103,17 @@ def gutter_y(r):
 # Layout
 # ------------------------------------------------------------------------------
 # Two parallel pipelines, Linux on the left and Windows on the right: base
-# image, Packer-built image, VM. The secret sits between them at the top
+# image, Packer-built image, VM. The password sits between them at the top
 # because both builds read it, and the client sits between the VMs.
 #
 # id: (x, y, colour key, icon, title, subtitle[, "dashed"])
 NODES.update({
     "ubuntu":   (COL[0], ROW[0], "navy", "layers", "Ubuntu 24.04",
                  "ubuntu-2404-lts-amd64 family"),
-    "secret":   (COL[1], ROW[0], "store", "key", "Secret Manager",
-                 "packer-credentials"),
-    "winbase":  (COL[2], ROW[0], "navy", "layers", "Windows Server 2022",
-                 "windows-2022 family"),
+    "secret":   (COL[1], ROW[0], "store", "key", "packer password",
+                 "random_password, Terraform state"),
+    "winbase":  (COL[2], ROW[0], "navy", "layers", "Windows Server 2025",
+                 "windows-2025 family"),
     "games":    (COL[0], ROW[1], "blue", "layers", "games-image",
                  "Packer: Apache + 12 HTML games"),
     "desktop":  (COL[2], ROW[1], "blue", "layers", "desktop-image",
@@ -154,9 +155,10 @@ EDGES = {
 
 ALT = ("Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 "
        "LTS family, with Apache serving twelve HTML games, and a desktop image from "
-       "the Windows Server 2022 family, built in packer-vpc over WinRM, with Windows "
-       "updates, Chrome and Firefox, sysprepped. Both builds read the packer account "
-       "password from Secret Manager. Terraform then launches a VM from each image: "
+       "the Windows Server 2025 family, built in packer-vpc over WinRM, with Windows "
+       "updates, Chrome and Firefox, sysprepped. Both builds set the packer account "
+       "password, which Terraform generates and keeps in its state. Terraform then "
+       "launches a VM from each image: "
        "a browser reaches the games VM over HTTP, and an RDP client reaches the "
        "Windows desktop VM.")
 

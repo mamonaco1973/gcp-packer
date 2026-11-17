@@ -51,7 +51,7 @@ variable "zone" {
 variable "source_image_family" {
   description = "Base Windows image family used as the build starting point"
   type        = string
-  default     = "windows-2022"
+  default     = "windows-2025"
 }
 
 variable "password" {
