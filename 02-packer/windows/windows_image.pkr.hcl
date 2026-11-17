@@ -89,7 +89,12 @@ source "googlecompute" "windows_image" {
   disk_size = 128
   disk_type = "pd-balanced"
 
-  image_name   = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  # Registering an image from the 128 GB disk can take 10 minutes or more.
+  # The default 5m wait gives up first, failing the build and leaving the
+  # disk behind while GCP is still creating the image.
+  state_timeout = "20m"
+
+  image_name  = "desktop-image-${formatdate("YYYYMMDDhhmmss", timestamp())}"
   image_family = "desktop-images"
 
   communicator   = "winrm"
