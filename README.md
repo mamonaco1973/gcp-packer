@@ -21,7 +21,7 @@ one VM from each.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
-  <img alt="Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 LTS family, with Apache serving twelve HTML games, and a desktop image from the Windows Server 2025 family, built in packer-vpc over WinRM, with Windows updates, Chrome and Firefox, sysprepped. Both builds set the packer account password, which Terraform generates and keeps in its state. Terraform then launches a VM from each image: a browser reaches the games VM over HTTP, and an RDP client reaches the Windows desktop VM." src="architecture-light.svg">
+  <img alt="Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 LTS family, with Apache serving twelve HTML games, and a desktop image from the Windows Server 2025 family, both built in packer-vpc (Linux over SSH, Windows over WinRM), with Windows updates, Chrome and Firefox, sysprepped. Both builds set the packer account password, which Terraform generates and keeps in its state. Terraform then launches a VM from each image: a browser reaches the games VM over HTTP, and an RDP client reaches the Windows desktop VM." src="architecture-light.svg">
 </picture>
 
 Regenerate with `python3 make_diagram.py`.
@@ -37,14 +37,14 @@ Regenerate with `python3 make_diagram.py`.
 
 ## How the images are built
 
-**Linux**:
+**Linux** (in `packer-vpc`, tagged `allow-ssh`):
 
 1. Copies `html/` to the build VM and installs Apache, which serves the games
    from `/var/www/html`.
 2. Creates the `packer` user with the generated password and passwordless sudo.
 
-The Linux template doesn't set a network, so Packer builds it on the
-project's `default` VPC.
+Both builds run in `packer-vpc`, the network Terraform creates, so the
+project doesn't need a `default` VPC.
 
 **Windows** (in `packer-vpc`, tagged `allow-winrm` and `allow-rdp`):
 
@@ -62,7 +62,7 @@ project's `default` VPC.
 ## Firewall rules
 
 ```
-internet ─80, 22─▶ games-vm
+internet ─80, 22─▶ games-vm, the Linux build VM (SSH)
 internet ─3389──▶ desktop-vm
 internet ─5986──▶ the Windows build VM (WinRM)
 ```
@@ -70,7 +70,7 @@ internet ─5986──▶ the Windows build VM (WinRM)
 | Rule | Port | Applies to |
 |---|---|---|
 | `allow-http` | tcp 80 | every VM in `packer-vpc` |
-| `allow-ssh` | tcp 22 | tag `allow-ssh` (games-vm) |
+| `allow-ssh` | tcp 22 | tag `allow-ssh` (games-vm, Linux build VM) |
 | `allow-rdp` | tcp 3389 | tag `allow-rdp` (desktop-vm, Windows build VM) |
 | `allow-winrm` | tcp 5986 | tag `allow-winrm` (Windows build VM) |
 
@@ -133,7 +133,7 @@ NOTE: Packer password:       <generated>
 
 | Symptom | Fix |
 |---|---|
-| The Linux build fails to create its VM | The project needs a `default` VPC network, which the Linux build uses. |
+| A Packer build can't find `packer-vpc` | Phase 1 (`01-infrastructure`) didn't finish; both builds run in that VPC. Re-run `apply.sh`. |
 | The Windows build sits at "Waiting for WinRM" | The metadata startup script configures WinRM on first boot; give it several minutes, and check that outbound 5986 isn't blocked where you run Packer. |
 | The Windows build takes a long time | Windows updates and the reboot after them. Expected. |
 | `apply.sh` stops with "No latest image found" | A Packer build failed; re-run `apply.sh` and read the Packer output. |

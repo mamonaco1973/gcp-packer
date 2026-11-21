@@ -155,7 +155,8 @@ EDGES = {
 
 ALT = ("Packer builds two Compute Engine images: a games image from the Ubuntu 24.04 "
        "LTS family, with Apache serving twelve HTML games, and a desktop image from "
-       "the Windows Server 2025 family, built in packer-vpc over WinRM, with Windows "
+       "the Windows Server 2025 family, both built in packer-vpc (Linux over SSH, "
+       "Windows over WinRM), with Windows "
        "updates, Chrome and Firefox, sysprepped. Both builds set the packer account "
        "password, which Terraform generates and keeps in its state. Terraform then "
        "launches a VM from each image: "

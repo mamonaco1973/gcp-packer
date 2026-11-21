@@ -51,7 +51,21 @@ variable "source_image_family" {
 }
 
 variable "password" {
-  description = "The password for the packer account"    # Will be passed into SSH provisioning script
+  description = "The password for the packer account" # Will be passed into SSH provisioning script
+}
+
+# Build in Terraform's VPC, like the Windows template, instead of the
+# project's default network -- many projects delete or never create it.
+variable "vpc" {
+  description = "VPC network name used by the temporary build instance"
+  type        = string
+  default     = "packer-vpc"
+}
+
+variable "subnet" {
+  description = "Subnetwork name used by the temporary build instance"
+  type        = string
+  default     = "packer-subnet"
 }
 
 # ==============================================================================
@@ -72,6 +86,14 @@ source "googlecompute" "packer_build_image" {
   image_name   = "games-image-${local.timestamp}"
   image_family = "games-images"
   disk_size    = 20
+
+  network    = var.vpc
+  subnetwork = var.subnet
+
+  # --------------------------------------------------------------------------
+  # Network tag: Terraform's allow-ssh rule opens 22 only to tagged VMs
+  # --------------------------------------------------------------------------
+  tags = ["allow-ssh"]
 }
 
 # ==============================================================================
